@@ -1,4 +1,5 @@
 import React from "react";
+import { FaHome, FaHeart, FaShoppingCart, FaUser } from "react-icons/fa";
 
 function SearchBar() {
   return (
@@ -8,12 +9,53 @@ function SearchBar() {
           width: 100%;
           display: flex;
           justify-content: center;
-          padding-top: 30px;
+          padding: 25px 16px 0;
+        }
+
+        .search-bar-container {
+          width: 100%;
+          max-width: 900px;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 14px;
+        }
+
+        .left-icons,
+        .right-icons {
+          display: flex;
+          align-items: center;
+          gap: 14px;
+        }
+
+        .icon-btn {
+          width: 40px;
+          height: 40px;
+          border: none;
+          background: transparent;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          color: #111827;
+          font-size: 18px;
+          transition: transform 0.2s ease, color 0.2s ease;
+        }
+
+        .icon-btn:hover {
+          transform: translateY(-2px);
+          color: #4f46e5;
+        }
+
+        .search-box {
+          flex: 1;
+          display: flex;
+          justify-content: center;
         }
 
         .search-input {
-          width: 320px;
-          max-width: 90%;
+          width: 100%;
+          max-width: 420px;
           border: none;
           outline: none;
           background: transparent;
@@ -26,14 +68,61 @@ function SearchBar() {
         .search-input::placeholder {
           color: #6b7280;
         }
+
+        @media (max-width: 768px) {
+          .search-bar-container {
+            gap: 8px;
+          }
+
+          .left-icons,
+          .right-icons {
+            gap: 8px;
+          }
+
+          .icon-btn {
+            width: 34px;
+            height: 34px;
+            font-size: 16px;
+          }
+
+          .search-input {
+            max-width: 100%;
+            font-size: 14px;
+          }
+        }
       `}</style>
 
       <div className="search-wrapper">
-        <input
-          type="text"
-          placeholder="Search for products..."
-          className="search-input"
-        />
+        <div className="search-bar-container">
+          {/* Left Icons */}
+          <div className="left-icons">
+            <button className="icon-btn" aria-label="Home">
+              <FaHome />
+            </button>
+            <button className="icon-btn" aria-label="Favorites">
+              <FaHeart />
+            </button>
+          </div>
+
+          {/* Search Input */}
+          <div className="search-box">
+            <input
+              type="text"
+              placeholder="Search for products..."
+              className="search-input"
+            />
+          </div>
+
+          {/* Right Icons */}
+          <div className="right-icons">
+            <button className="icon-btn" aria-label="Cart">
+              <FaShoppingCart />
+            </button>
+            <button className="icon-btn" aria-label="Profile">
+              <FaUser />
+            </button>
+          </div>
+        </div>
       </div>
     </>
   );

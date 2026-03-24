@@ -5,7 +5,6 @@ import BestItems from "./BestItems";
 import TrendingSection from "./TrendingSection";
 import AllProductsSection from "./AllProductsSection";
 import SearchBar from "./SearchBar";
-import BottomNav from "./BottomNav";
 
 function HomePage() {
 
@@ -17,7 +16,6 @@ function HomePage() {
       <BestItems/>
       <TrendingSection/>
       <AllProductsSection  />
-      <BottomNav/>
     </>
   );
 }

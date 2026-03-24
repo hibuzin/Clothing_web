@@ -1,45 +1,102 @@
-import React, { useEffect, useState, useRef } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
+import { FaArrowLeft, FaArrowRight } from "react-icons/fa";
 
 function ProductDetail() {
-  const { id } = useParams();
   const navigate = useNavigate();
+  const { id } = useParams();
 
-  const [product, setProduct] = useState(null);
   const [allProducts, setAllProducts] = useState([]);
   const [loading, setLoading] = useState(true);
-  const allProductsRef = useRef([]);
+  const [activeId, setActiveId] = useState(id || "");
+
+  const scrollRef = useRef(null);
+  const productRefs = useRef([]);
 
   useEffect(() => {
-    const fetchProductDetail = async () => {
+    const fetchProducts = async () => {
       setLoading(true);
       try {
-        if (allProductsRef.current.length === 0) {
-          const response = await fetch(
-            "https://clothing-backend-7.onrender.com/api/products/"
-          );
-          const data = await response.json();
-          allProductsRef.current = data;
-          setAllProducts(data);
-        }
-
-        const foundProduct = allProductsRef.current.find(
-          (item) => item._id === id
+        const response = await fetch(
+          "https://clothing-backend-7.onrender.com/api/products/"
         );
-        setProduct(foundProduct || null);
+        const data = await response.json();
+        setAllProducts(data || []);
       } catch (error) {
-        console.error("Error fetching product detail:", error);
+        console.error("Error fetching products:", error);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchProductDetail();
+    fetchProducts();
+  }, []);
+
+  // route sync
+  useEffect(() => {
+    if (id) {
+      setActiveId(id);
+    }
   }, [id]);
 
-  const currentIndex = allProducts.findIndex((item) => item._id === id);
-  const nextProduct = currentIndex !== -1 ? allProducts[currentIndex + 1] ?? null : null;
-  const prevProduct = currentIndex !== -1 ? allProducts[currentIndex - 1] ?? null : null;
+  // fallback active product
+  useEffect(() => {
+    if (!loading && allProducts.length > 0 && !activeId) {
+      const firstId = allProducts[0]._id;
+      setActiveId(firstId);
+    }
+  }, [loading, allProducts, activeId]);
+
+  const activeIndex = useMemo(() => {
+    return allProducts.findIndex((item) => item._id === activeId);
+  }, [allProducts, activeId]);
+
+  // active product center-ku smooth scroll
+  useEffect(() => {
+    if (!allProducts.length || activeIndex === -1) return;
+
+    const activeCard = productRefs.current[activeIndex];
+    if (activeCard) {
+      activeCard.scrollIntoView({
+        behavior: "smooth",
+        inline: "center",
+        block: "nearest",
+      });
+    }
+  }, [activeIndex, allProducts]);
+
+  const handleProductClick = (productId) => {
+    setActiveId(productId); // instant UI update
+    navigate(`/product/${productId}`); // route update
+  };
+
+  const handlePrev = () => {
+    if (!allProducts.length) return;
+
+    const currentIndex = activeIndex >= 0 ? activeIndex : 0;
+    const prevIndex =
+      currentIndex === 0 ? allProducts.length - 1 : currentIndex - 1;
+
+    const prevProduct = allProducts[prevIndex];
+    if (prevProduct) {
+      setActiveId(prevProduct._id);
+      navigate(`/product/${prevProduct._id}`);
+    }
+  };
+
+  const handleNext = () => {
+    if (!allProducts.length) return;
+
+    const currentIndex = activeIndex >= 0 ? activeIndex : 0;
+    const nextIndex =
+      currentIndex === allProducts.length - 1 ? 0 : currentIndex + 1;
+
+    const nextProduct = allProducts[nextIndex];
+    if (nextProduct) {
+      setActiveId(nextProduct._id);
+      navigate(`/product/${nextProduct._id}`);
+    }
+  };
 
   return (
     <>
@@ -53,248 +110,23 @@ function ProductDetail() {
         .pdp {
           width: 100%;
           min-height: 100vh;
-          background: #fff;
-        }
-
-        .pdp-image-wrap {
-          position: relative;
-          width: 100%;
+          background:
+            radial-gradient(circle at top left, rgba(76, 29, 149, 0.28), transparent 28%),
+            radial-gradient(circle at top right, rgba(59, 130, 246, 0.16), transparent 28%),
+            radial-gradient(circle at bottom center, rgba(139, 92, 246, 0.12), transparent 40%),
+            linear-gradient(135deg, #020617, #0f172a, #1e1b4b, #111827);
+          padding: 40px 16px 60px;
           overflow: hidden;
         }
 
-        .pdp-category-overlay {
-          position: absolute;
-          top: 16px;
-          left: 16px;
-          font-size: 10px;
-          font-weight: 600;
-          color: #fff;
-          letter-spacing: 2px;
-          text-transform: uppercase;
-          background: rgba(0, 0, 0, 0.4);
-          backdrop-filter: blur(6px);
-          -webkit-backdrop-filter: blur(6px);
-          padding: 6px 10px;
-          border-radius: 3px;
-          z-index: 5;
-        }
-
-        /* Main shirt */
-        .pdp-image {
-          width: 100%;
-          height: 380px;
-          object-fit: contain;
-          display: block;
-          transition: transform 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-        }
-
-        .pdp-image:hover {
-          transform: scale(1.03);
-        }
-
-        /*Next shirt*/
-
-        .corner-next {
-          position: absolute;
-          top: 16px;
-          right: 16px;
-          display: flex;
-          flex-direction: column;
-          align-items: flex-end;
-          gap: 5px;
-          cursor: pointer;
-          z-index: 10;
-        }
-
-        .corner-next:hover .corner-thumb {
-          transform: scale(1.08);
-          box-shadow: 0 8px 24px rgba(0,0,0,0.22);
-        }
-
-        .corner-next:hover .corner-badge {
-          background: #0a0a0a;
-          color: #fff;
-        }
-
-
-        /*Prev shirt*/
-        .corner-prev {
-          position: absolute;
-          bottom: 16px;
-          left: 16px;
-          display: flex;
-          flex-direction: column;
-          align-items: flex-start;
-          gap: 5px;
-          cursor: pointer;
-          z-index: 10;
-        }
-
-        .corner-prev:hover .corner-thumb {
-          transform: scale(1.08);
-          box-shadow: 0 8px 24px rgba(0,0,0,0.22);
-        }
-
-        .corner-prev:hover .corner-badge {
-          background: #0a0a0a;
-          color: #fff;
-        }
-
-        .corner-badge {
-          font-size: 9px;
-          font-weight: 800;
-          letter-spacing: 2px;
-          text-transform: uppercase;
-          color: #0a0a0a;
-          background: #fff;
-          padding: 3px 8px;
-          transition: all 0.25s ease;
-        }
-
-        .corner-thumb {
-          width: 72px;
-          height: 90px;
-          object-fit: cover;
-          display: block;
-          transition: transform 0.3s ease, box-shadow 0.3s ease;
-          box-shadow: 0 4px 14px rgba(0,0,0,0.15);
-        }
-
-        .corner-name {
-          font-size: 9px;
-          font-weight: 600;
-          color: #fff;
-          background: rgba(0,0,0,0.55);
-          padding: 2px 7px;
-          letter-spacing: 0.5px;
-          text-transform: capitalize;
-          max-width: 90px;
-          white-space: nowrap;
-          overflow: hidden;
-          text-overflow: ellipsis;
-        }
-
-        .pdp-info {
-          padding: 24px 16px 80px;
-          display: flex;
-          flex-direction: column;
-          gap: 14px;
-          max-width: 600px;
-          margin: 0 auto;
-          width: 100%;
-        }
-
-        .pdp-title-row {
-          display: flex;
-          align-items: center;
-          gap: 10px;
-          width: 100%;
-        }
-
-        .pdp-name {
-          font-size: 26px;
+        .pdp-title {
+          text-align: center;
+          font-size: 12px;
           font-weight: 700;
-          color: #0a0a0a;
-          text-transform: capitalize;
-          line-height: 1.2;
-          letter-spacing: -0.4px;
-          flex: 1;
-          margin: 0;
-        }
-
-        .pdp-price {
-          font-size: 21px;
-          font-weight: 700;
-          color: #0a0a0a;
-          white-space: nowrap;
-          margin: 0;
-          text-align: right;
-        }
-
-        .divider {
-          height: 1px;
-          background: #f0f0f0;
-        }
-
-        .pdp-meta {
-          display: flex;
-          flex-direction: column;
-          gap: 10px;
-        }
-
-        .meta-item {
-          font-size: 13px;
-          color: #6b6b6b;
-          text-transform: capitalize;
-          display: flex;
-          gap: 10px;
-          align-items: center;
-        }
-
-        .meta-label {
-          font-weight: 700;
-          color: #0a0a0a;
-          min-width: 90px;
+          color: #ffffff;
+          letter-spacing: 3px;
           text-transform: uppercase;
-          font-size: 10px;
-          letter-spacing: 1px;
-        }
-
-        .pdp-desc-title {
-          font-size: 10px;
-          font-weight: 700;
-          color: #0a0a0a;
-          text-transform: uppercase;
-          letter-spacing: 2px;
-          margin-bottom: 8px;
-        }
-
-        .pdp-desc-text {
-          font-size: 13px;
-          color: #7a7a7a;
-          line-height: 1.9;
-        }
-
-        .pdp-actions {
-          display: flex;
-          gap: 10px;
-          margin-top: 6px;
-        }
-
-        .buy-btn,
-        .cart-btn {
-          flex: 1;
-          border: none;
-          border-radius: 0;
-          padding: 16px 12px;
-          font-size: 11px;
-          font-weight: 800;
-          cursor: pointer;
-          letter-spacing: 2px;
-          text-transform: uppercase;
-          transition: opacity 0.2s ease, transform 0.2s ease, background 0.2s ease, color 0.2s ease;
-        }
-
-        .buy-btn {
-          background: #0a0a0a;
-          color: #fff;
-        }
-
-        .cart-btn {
-          background: #fff;
-          color: #0a0a0a;
-          border: 1.5px solid #0a0a0a;
-        }
-
-        .buy-btn:hover {
-          opacity: 0.8;
-          transform: translateY(-1px);
-        }
-
-        .cart-btn:hover {
-          background: #0a0a0a;
-          color: #fff;
-          transform: translateY(-1px);
+          margin-bottom: 24px;
         }
 
         .pdp-loading,
@@ -307,110 +139,239 @@ function ProductDetail() {
           text-transform: uppercase;
         }
 
-        @media (min-width: 768px) {
-          .pdp-image {
-            height: 420px;
+        /* SCROLL AREA */
+        .scroll-container {
+          width: 100%;
+          overflow-x: auto;
+          overflow-y: hidden;
+          padding: 20px 0;
+          scroll-behavior: smooth;
+          scrollbar-width: none;
+          -ms-overflow-style: none;
+          cursor: grab;
+        }
+
+        .scroll-container::-webkit-scrollbar {
+          display: none;
+        }
+
+        .products-row {
+          display: flex;
+          align-items: flex-start;
+          gap: 28px;
+          width: max-content;
+          padding: 0 calc(50vw - 160px);
+        }
+
+        .product-card {
+          flex: 0 0 auto;
+          width: 320px;
+          max-width: 320px;
+          min-width: 320px;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 10px;
+          cursor: pointer;
+          transition: transform 0.35s ease, opacity 0.35s ease;
+          opacity: 0.45;
+          transform: scale(0.92);
+        }
+
+        .product-card:hover {
+          opacity: 0.8;
+          transform: scale(0.96);
+        }
+
+        .active-product {
+          opacity: 1;
+          transform: scale(1);
+        }
+
+        .product-image {
+          width: 100%;
+          height: 430px;
+          object-fit: contain;
+          background: rgba(255, 255, 255, 0.05);
+          border: 1px solid rgba(255, 255, 255, 0.08);
+          padding: 14px;
+          display: block;
+          transition: transform 0.35s ease, box-shadow 0.35s ease, border 0.35s ease;
+          backdrop-filter: blur(6px);
+        }
+
+        .product-card:hover .product-image {
+          box-shadow: 0 8px 24px rgba(0, 0, 0, 0.28);
+        }
+
+        .active-product .product-image {
+          border: 2px solid #ffffff;
+          box-shadow: 0 12px 30px rgba(255, 255, 255, 0.14);
+          transform: scale(1.02);
+        }
+
+        .badge {
+          font-size: 9px;
+          font-weight: 800;
+          letter-spacing: 2px;
+          text-transform: uppercase;
+          color: #0a0a0a;
+          background: #ffffff;
+          padding: 4px 10px;
+          border-radius: 2px;
+        }
+
+        .product-name {
+          font-size: 11px;
+          font-weight: 600;
+          color: #ffffff;
+          background: rgba(0, 0, 0, 0.45);
+          padding: 6px 10px;
+          letter-spacing: 0.5px;
+          text-transform: capitalize;
+          max-width: 100%;
+          width: 100%;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          text-align: center;
+          border-radius: 4px;
+        }
+
+        /* ARROWS */
+        .arrow-controls {
+          width: 100%;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-top: 22px;
+          padding: 0 20px;
+        }
+
+        .arrow-btn {
+          width: 48px;
+          height: 48px;
+          border: 1px solid rgba(255, 255, 255, 0.18);
+          background: rgba(255, 255, 255, 0.06);
+          color: #ffffff;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          font-size: 16px;
+          transition: all 0.3s ease;
+          backdrop-filter: blur(6px);
+        }
+
+        .arrow-btn:hover {
+          background: #ffffff;
+          color: #0f172a;
+          transform: translateY(-3px);
+          box-shadow: 0 8px 24px rgba(255, 255, 255, 0.12);
+        }
+
+        @media (max-width: 768px) {
+          .pdp {
+            padding: 28px 12px 40px;
           }
 
-          .pdp-info {
-            padding: 40px 24px 100px;
+          .scroll-container {
+            padding: 16px 0;
           }
 
-          .pdp-name {
-            font-size: 32px;
+          .products-row {
+            gap: 16px;
+            padding: 0 calc(50vw - 90px);
           }
 
-          .pdp-price {
-            font-size: 24px;
+          .product-card {
+            width: 180px;
+            min-width: 180px;
+            max-width: 180px;
+            opacity: 0.5;
+            transform: scale(0.9);
           }
 
-          .pdp-category-overlay {
-            top: 20px;
-            left: 20px;
+          .active-product {
+            opacity: 1;
+            transform: scale(1);
+          }
+
+          .product-image {
+            width: 100%;
+            height: 230px;
+            padding: 8px;
+          }
+
+          .product-name {
+            font-size: 9px;
+            width: 100%;
+          }
+
+          .arrow-controls {
+            margin-top: 18px;
+            padding: 0 8px;
+          }
+
+          .arrow-btn {
+            width: 42px;
+            height: 42px;
+            font-size: 14px;
           }
         }
       `}</style>
 
       <section className="pdp">
+        <div className="pdp-title">Luxury Collection</div>
+
         {loading ? (
           <p className="pdp-loading">Loading...</p>
-        ) : !product ? (
-          <p className="pdp-empty">Product not found</p>
+        ) : allProducts.length === 0 ? (
+          <p className="pdp-empty">No products found</p>
         ) : (
           <>
-            <div className="pdp-image-wrap">
-              <p className="pdp-category-overlay">
-                {product.category?.name} / {product.subcategory?.name}
-              </p>
+            <div className="scroll-container" ref={scrollRef}>
+              <div className="products-row">
+                {allProducts.map((item, index) => (
+                  <div
+                    key={item._id}
+                    ref={(el) => (productRefs.current[index] = el)}
+                    className={`product-card ${
+                      item._id === activeId ? "active-product" : ""
+                    }`}
+                    onClick={() => handleProductClick(item._id)}
+                  >
+                    <span className="badge">Product {index + 1}</span>
 
-              <img
-                src={product.image}
-                alt={product.name}
-                className="pdp-image"
-              />
+                    <img
+                      src={item.image}
+                      alt={item.name}
+                      className="product-image"
+                    />
 
-              {nextProduct && (
-                <div
-                  className="corner-next"
-                  onClick={() => navigate(`/product/${nextProduct._id}`)}
-                >
-                  <span className="corner-badge">Next →</span>
-                  <img
-                    src={nextProduct.image}
-                    alt={nextProduct.name}
-                    className="corner-thumb"
-                  />
-                  <span className="corner-name">{nextProduct.name}</span>
-                </div>
-              )}
-
-              {prevProduct && (
-                <div
-                  className="corner-prev"
-                  onClick={() => navigate(`/product/${prevProduct._id}`)}
-                >
-                  <span className="corner-badge">← Prev</span>
-                  <img
-                    src={prevProduct.image}
-                    alt={prevProduct.name}
-                    className="corner-thumb"
-                  />
-                  <span className="corner-name">{prevProduct.name}</span>
-                </div>
-              )}
+                    <span className="product-name">{item.name}</span>
+                  </div>
+                ))}
+              </div>
             </div>
 
-            <div className="pdp-info">
-              <div className="pdp-title-row">
-                <h1 className="pdp-name">{product.name}</h1>
-                <p className="pdp-price">₹{product.price}</p>
-              </div>
+            {/* Bottom Arrow Controls */}
+            <div className="arrow-controls">
+              <button
+                className="arrow-btn"
+                onClick={handlePrev}
+                aria-label="Previous Product"
+              >
+                <FaArrowLeft />
+              </button>
 
-              <div className="divider" />
-
-              <div className="pdp-meta">
-                <p className="meta-item">
-                  {product.brand && <><strong>Brand:</strong> {product.brand} | </>}
-                  {product.color && <><strong>Color:</strong> {product.color} | </>}
-                  {product.size && <><strong>Size:</strong> {product.size} | </>}
-                  {product.category?.name && <><strong>Category:</strong> {product.category.name} | </>}
-                  {product.subcategory?.name && <><strong>Subcategory:</strong> {product.subcategory.name}</>}
-                </p>
-              </div>
-
-              <div className="divider" />
-
-              <div>
-                <h3 className="pdp-desc-title">Description</h3>
-                <p className="pdp-desc-text">
-                  {product.description || "No description available."}
-                </p>
-              </div>
-
-              <div className="pdp-actions">
-                <button className="buy-btn">Buy Now</button>
-                <button className="cart-btn">Add to Cart</button>
-              </div>
+              <button
+                className="arrow-btn"
+                onClick={handleNext}
+                aria-label="Next Product"
+              >
+                <FaArrowRight />
+              </button>
             </div>
           </>
         )}
