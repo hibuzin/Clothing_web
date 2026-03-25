@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { FaArrowLeft, FaArrowRight } from "react-icons/fa";
 
@@ -10,16 +10,8 @@ function ProductDetail() {
   const [loading, setLoading] = useState(true);
   const [activeId, setActiveId] = useState(id || "");
 
-  const [animating, setAnimating] = useState(false);
-  const [direction, setDirection] = useState(""); // "next" | "prev"
-
-  // freeze cards during animation
-  const [cards, setCards] = useState({
-    main: null,
-    next: null,
-    prev: null,
-    index: -1,
-  });
+  const scrollRef = useRef(null);
+  const productRefs = useRef([]);
 
   useEffect(() => {
     const fetchProducts = async () => {
@@ -40,96 +32,102 @@ function ProductDetail() {
     fetchProducts();
   }, []);
 
+  // route sync
   useEffect(() => {
-    if (id) setActiveId(id);
+    if (id) {
+      setActiveId(id);
+    }
   }, [id]);
 
+  // fallback active product
   useEffect(() => {
     if (!loading && allProducts.length > 0 && !activeId) {
-      setActiveId(allProducts[0]._id);
+      const firstId = allProducts[0]._id;
+      setActiveId(firstId);
     }
   }, [loading, allProducts, activeId]);
-
-  useEffect(() => {
-    window.history.pushState(null, "", window.location.href);
-
-    const handlePopState = () => {
-      navigate("/", { replace: true });
-    };
-
-    window.addEventListener("popstate", handlePopState);
-
-    return () => {
-      window.removeEventListener("popstate", handlePopState);
-    };
-  }, [navigate]);
 
   const activeIndex = useMemo(() => {
     return allProducts.findIndex((item) => item._id === activeId);
   }, [allProducts, activeId]);
 
   const activeProduct = useMemo(() => {
-    return allProducts.find((item) => item._id === activeId);
-  }, [allProducts, activeId]);
+  return allProducts.find((item) => item._id === activeId);
+}, [allProducts, activeId]);
 
-  const prevProduct = useMemo(() => {
-    if (!allProducts.length || activeIndex === -1) return null;
-    const prevIndex =
-      activeIndex === 0 ? allProducts.length - 1 : activeIndex - 1;
-    return allProducts[prevIndex];
-  }, [allProducts, activeIndex]);
+const activeColor = useMemo(() => {
+  if (!activeProduct) return "default";
 
-  const nextProduct = useMemo(() => {
-    if (!allProducts.length || activeIndex === -1) return null;
-    const nextIndex =
-      activeIndex === allProducts.length - 1 ? 0 : activeIndex + 1;
-    return allProducts[nextIndex];
-  }, [allProducts, activeIndex]);
+  return (
+    activeProduct.color ||
+    activeProduct.variants?.[0]?.color ||
+    "default"
+  )
+    .trim()
+    .toLowerCase();
+}, [activeProduct]);
 
-  useEffect(() => {
-    if (!animating && activeProduct) {
-      setCards({
-        main: activeProduct,
-        next: nextProduct,
-        prev: prevProduct,
-        index: activeIndex,
-      });
-    }
-  }, [animating, activeProduct, nextProduct, prevProduct, activeIndex]);
+const getDynamicBackground = (color) => {
+  const cleanColor = color?.trim().toLowerCase();
 
-  const startSwap = (type) => {
-    if (animating) return;
+  console.log("ACTIVE COLOR:", cleanColor); // debug
 
-    setCards({
-      main: activeProduct,
-      next: nextProduct,
-      prev: prevProduct,
-      index: activeIndex,
-    });
+  const colorMap = {
+    "ice blue": "linear-gradient(135deg, #38bdf8, #0ea5e9, #1d4ed8)",
+    "dark purple": "linear-gradient(135deg, #7e22ce, #581c87, #3b0764)",
+    "light brown": "linear-gradient(135deg, #d97706, #92400e, #451a03)",
 
-    setDirection(type);
-    setAnimating(true);
-
-    setTimeout(() => {
-      if (type === "next" && nextProduct) {
-        setActiveId(nextProduct._id);
-        navigate(`/product/${nextProduct._id}`, { replace: true });
-      }
-
-      if (type === "prev" && prevProduct) {
-        setActiveId(prevProduct._id);
-        navigate(`/product/${prevProduct._id}`, { replace: true });
-      }
-
-      setAnimating(false);
-      setDirection("");
-    }, 550);
+    default: "linear-gradient(135deg, #111827, #1f2937, #374151)",
   };
 
-  const visibleMain = animating ? cards.main : activeProduct;
-  const visibleNext = animating ? cards.next : nextProduct;
-  const visiblePrev = animating ? cards.prev : prevProduct;
-  const visibleIndex = animating ? cards.index : activeIndex;
+  return colorMap[cleanColor] || colorMap.default;
+};
+  // active product center-ku smooth scroll
+  useEffect(() => {
+    if (!allProducts.length || activeIndex === -1) return;
+
+    const activeCard = productRefs.current[activeIndex];
+    if (activeCard) {
+      activeCard.scrollIntoView({
+        behavior: "smooth",
+        inline: "center",
+        block: "nearest",
+      });
+    }
+  }, [activeIndex, allProducts]);
+
+  const handleProductClick = (productId) => {
+    setActiveId(productId); // instant UI update
+    navigate(`/product/${productId}`); // route update
+  };
+
+  const handlePrev = () => {
+    if (!allProducts.length) return;
+
+    const currentIndex = activeIndex >= 0 ? activeIndex : 0;
+    const prevIndex =
+      currentIndex === 0 ? allProducts.length - 1 : currentIndex - 1;
+
+    const prevProduct = allProducts[prevIndex];
+    if (prevProduct) {
+      setActiveId(prevProduct._id);
+      navigate(`/product/${prevProduct._id}`);
+    }
+  };
+
+  const handleNext = () => {
+    if (!allProducts.length) return;
+
+    const currentIndex = activeIndex >= 0 ? activeIndex : 0;
+    const nextIndex =
+      currentIndex === allProducts.length - 1 ? 0 : currentIndex + 1;
+
+    const nextProduct = allProducts[nextIndex];
+    if (nextProduct) {
+      setActiveId(nextProduct._id);
+      navigate(`/product/${nextProduct._id}`);
+    }
+  };
 
   return (
     <>
@@ -143,8 +141,8 @@ function ProductDetail() {
         .pdp {
           width: 100%;
           min-height: 100vh;
-          padding: 18px 20px 20px;
-          background: #ffffff;
+          
+          padding: 40px 16px 60px;
           overflow: hidden;
         }
 
@@ -152,325 +150,208 @@ function ProductDetail() {
           text-align: center;
           font-size: 12px;
           font-weight: 700;
-          color: #111827;
+          color: #ffffff;
           letter-spacing: 3px;
           text-transform: uppercase;
-          margin-bottom: 10px;
+          margin-bottom: 24px;
         }
 
         .pdp-loading,
         .pdp-empty {
           text-align: center;
-          font-size: 14px;
-          color: #6b7280;
+          font-size: 13px;
+          color: #c0c0c0;
           margin-top: 100px;
+          letter-spacing: 2px;
+          text-transform: uppercase;
         }
 
-        .showcase-layout {
-          position: relative;
+        /* SCROLL AREA */
+        .scroll-container {
           width: 100%;
-          min-height: 75vh;
-          display: flex;
-          align-items: center;
-          justify-content: center;
+          overflow-x: auto;
+          overflow-y: hidden;
+          padding: 20px 0;
+          scroll-behavior: smooth;
+          scrollbar-width: none;
+          -ms-overflow-style: none;
+          cursor: grab;
         }
 
-        .main-product,
-        .next-preview,
-        .prev-preview {
-          position: absolute;
+        .scroll-container::-webkit-scrollbar {
+          display: none;
+        }
+
+        .products-row {
+          display: flex;
+          align-items: flex-start;
+          gap: 28px;
+          width: max-content;
+          padding: 0 calc(50vw - 160px);
+        }
+
+        .product-card {
+          flex: 0 0 auto;
+          width: 320px;
+          max-width: 320px;
+          min-width: 320px;
           display: flex;
           flex-direction: column;
           align-items: center;
-          gap: 8px;
-          transition: transform 0.55s cubic-bezier(0.22, 1, 0.36, 1),
-            opacity 0.55s ease;
-          will-change: transform, opacity;
+          gap: 10px;
+          cursor: pointer;
+          transition: transform 0.35s ease, opacity 0.35s ease;
+          opacity: 0.45;
+          transform: scale(0.92);
         }
 
-        /* DEFAULT POSITIONS */
-        .main-product {
+        .product-card:hover {
+          opacity: 0.8;
+          transform: scale(0.96);
+        }
+
+        .active-product {
+          opacity: 1;
+          transform: scale(1);
+        }
+
+        .product-image {
           width: 100%;
-          max-width: 360px;
-          z-index: 3;
-          left: 50%;
-          top: 50%;
-          transform: translate(-50%, -50%) scale(1);
+          height: 430px;
+          object-fit: contain;
+          background: rgba(255, 255, 255, 0.05);
+          border: 1px solid rgba(255, 255, 255, 0.08);
+          padding: 14px;
+          display: block;
+          transition: transform 0.35s ease, box-shadow 0.35s ease, border 0.35s ease;
+          backdrop-filter: blur(6px);
         }
 
-        .next-preview {
-          top: 20px;
-          right: 30px;
-          width: 140px;
-          z-index: 2;
-          cursor: pointer;
-          transform: translate(0, 0) scale(1);
+        .product-card:hover .product-image {
+          box-shadow: 0 8px 24px rgba(0, 0, 0, 0.28);
         }
 
-        .prev-preview {
-          bottom: 20px;
-          left: 30px;
-          width: 140px;
-          z-index: 2;
-          cursor: pointer;
-          transform: translate(0, 0) scale(1);
+        .active-product .product-image {
+          border: 2px solid #ffffff;
+          box-shadow: 0 12px 30px rgba(255, 255, 255, 0.14);
+          transform: scale(1.02);
         }
 
-        /* NEXT CLICK:
-           next -> center
-           main -> prev
-           prev -> fade out
-        */
-        .showcase-layout.swap-next .next-preview {
-          transform: translate(-320px, 180px) scale(2.45);
-          z-index: 5;
-          opacity: 1;
-        }
-
-        .showcase-layout.swap-next .main-product {
-          transform: translate(-185%, 38%) scale(0.42);
-          z-index: 4;
-          opacity: 0.95;
-        }
-
-        .showcase-layout.swap-next .prev-preview {
-          opacity: 0;
-          transform: translate(-30px, 20px) scale(0.8);
-        }
-
-        /* PREV CLICK:
-           prev -> center
-           main -> next
-           next -> fade out
-        */
-        .showcase-layout.swap-prev .prev-preview {
-          transform: translate(320px, -180px) scale(2.45);
-          z-index: 5;
-          opacity: 1;
-        }
-
-        .showcase-layout.swap-prev .main-product {
-          transform: translate(85%, -138%) scale(0.42);
-          z-index: 4;
-          opacity: 0.95;
-        }
-
-        .showcase-layout.swap-prev .next-preview {
-          opacity: 0;
-          transform: translate(30px, -20px) scale(0.8);
-        }
-
-        .main-badge {
+        .badge {
           font-size: 9px;
           font-weight: 800;
           letter-spacing: 2px;
           text-transform: uppercase;
-          color: #ffffff;
-          background: #111827;
+          color: #0a0a0a;
+          background: #ffffff;
           padding: 4px 10px;
-          border-radius: 4px;
+          border-radius: 2px;
         }
 
-        .preview-label {
-          font-size: 9px;
-          font-weight: 700;
-          color: #6b7280;
-          letter-spacing: 1px;
-          text-transform: uppercase;
-        }
-
-        .main-image {
-          width: 100%;
-          height: 420px;
-          object-fit: contain;
-          background: #f8fafc;
-          border: 1px solid #e5e7eb;
-          padding: 14px;
-          border-radius: 16px;
-          box-shadow: 0 18px 40px rgba(0, 0, 0, 0.08);
-        }
-
-        .preview-image {
-          width: 100%;
-          height: 140px;
-          object-fit: contain;
-          background: #f8fafc;
-          border: 1px solid #e5e7eb;
-          padding: 8px;
-          border-radius: 12px;
-          box-shadow: 0 10px 22px rgba(0, 0, 0, 0.06);
-        }
-
-        .main-name {
-          font-size: 14px;
-          font-weight: 700;
-          color: #111827;
-          text-transform: capitalize;
-          text-align: center;
-          background: #f3f4f6;
-          padding: 8px 12px;
-          border-radius: 8px;
-          width: 100%;
-        }
-
-        .main-price {
-          font-size: 18px;
-          font-weight: 800;
-          color: #111827;
-        }
-
-        .preview-name {
-          font-size: 10px;
+        .product-name {
+          font-size: 11px;
           font-weight: 600;
-          color: #111827;
+          color: #ffffff;
+          background: rgba(0, 0, 0, 0.45);
+          padding: 6px 10px;
+          letter-spacing: 0.5px;
           text-transform: capitalize;
-          text-align: center;
+          max-width: 100%;
           width: 100%;
           white-space: nowrap;
           overflow: hidden;
           text-overflow: ellipsis;
-          background: #f3f4f6;
-          padding: 5px 8px;
-          border-radius: 6px;
+          text-align: center;
+          border-radius: 4px;
         }
 
+        /* ARROWS */
         .arrow-controls {
           width: 100%;
           display: flex;
           justify-content: space-between;
           align-items: center;
-          margin-top: 10px;
+          margin-top: 22px;
           padding: 0 20px;
         }
 
         .arrow-btn {
           width: 48px;
           height: 48px;
-          border: 1px solid #d1d5db;
-          background: #ffffff;
-          color: #111827;
+          border: 1px solid rgba(255, 255, 255, 0.18);
+          background: rgba(255, 255, 255, 0.06);
+          color: #ffffff;
           display: flex;
           align-items: center;
           justify-content: center;
           cursor: pointer;
-          font-size: 15px;
-          border-radius: 50%;
+          font-size: 16px;
           transition: all 0.3s ease;
-          box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06);
+          backdrop-filter: blur(6px);
         }
 
-        .arrow-btn:hover:not(:disabled) {
-          background: #111827;
-          color: #ffffff;
-          transform: translateY(-2px);
+        .arrow-btn:hover {
+          background: #ffffff;
+          color: #0f172a;
+          transform: translateY(-3px);
+          box-shadow: 0 8px 24px rgba(255, 255, 255, 0.12);
         }
 
-        .arrow-btn:disabled {
-          opacity: 0.5;
-          cursor: not-allowed;
-        }
-
-        /* TABLET */
-        @media (max-width: 1024px) {
-          .main-product {
-            max-width: 320px;
-          }
-
-          .main-image {
-            height: 360px;
-          }
-
-          .next-preview,
-          .prev-preview {
-            width: 120px;
-          }
-
-          .preview-image {
-            height: 110px;
-          }
-
-          .showcase-layout.swap-next .next-preview {
-            transform: translate(-260px, 150px) scale(2.2);
-          }
-
-          .showcase-layout.swap-prev .prev-preview {
-            transform: translate(260px, -150px) scale(2.2);
-          }
-        }
-
-        /* MOBILE */
         @media (max-width: 768px) {
           .pdp {
-            padding: 16px 12px 20px;
+            padding: 28px 12px 40px;
           }
 
-          .showcase-layout {
-            min-height: 540px;
+          .scroll-container {
+            padding: 16px 0;
           }
 
-          .main-product {
-            max-width: 240px;
+          .products-row {
+            gap: 16px;
+            padding: 0 calc(50vw - 90px);
           }
 
-          .main-image {
-            height: 270px;
-            padding: 10px;
+          .product-card {
+            width: 180px;
+            min-width: 180px;
+            max-width: 180px;
+            opacity: 0.5;
+            transform: scale(0.9);
           }
 
-          .next-preview,
-          .prev-preview {
-            width: 85px;
+          .active-product {
+            opacity: 1;
+            transform: scale(1);
           }
 
-          .next-preview {
-            top: 20px;
-            right: 10px;
+          .product-image {
+            width: 100%;
+            height: 230px;
+            padding: 8px;
           }
 
-          .prev-preview {
-            bottom: 20px;
-            left: 10px;
-          }
-
-          .preview-image {
-            height: 80px;
-            padding: 5px;
-          }
-
-          .preview-name,
-          .preview-label {
-            display: none;
-          }
-
-          .showcase-layout.swap-next .next-preview {
-            transform: translate(-145px, 125px) scale(2.35);
-          }
-
-          .showcase-layout.swap-next .main-product {
-            transform: translate(-160%, 55%) scale(0.36);
-          }
-
-          .showcase-layout.swap-prev .prev-preview {
-            transform: translate(145px, -125px) scale(2.35);
-          }
-
-          .showcase-layout.swap-prev .main-product {
-            transform: translate(65%, -150%) scale(0.36);
+          .product-name {
+            font-size: 9px;
+            width: 100%;
           }
 
           .arrow-controls {
-            padding: 0 5px;
+            margin-top: 18px;
+            padding: 0 8px;
           }
 
           .arrow-btn {
             width: 42px;
             height: 42px;
-            font-size: 13px;
+            font-size: 14px;
           }
         }
       `}</style>
 
-      <section className="pdp">
+      <section
+  className="pdp"
+  style={{ background: getDynamicBackground(activeColor) }}
+>
         <div className="pdp-title">Luxury Collection</div>
 
         {loading ? (
@@ -479,72 +360,45 @@ function ProductDetail() {
           <p className="pdp-empty">No products found</p>
         ) : (
           <>
-            <div
-              className={`showcase-layout ${
-                direction ? `swap-${direction}` : ""
-              }`}
-            >
-              {visibleNext && (
-                <div
-                  className="next-preview"
-                  onClick={!animating ? () => startSwap("next") : undefined}
-                >
-                  <span className="preview-label">Next</span>
-                  <img
-                    src={visibleNext.image}
-                    alt={visibleNext.name}
-                    className="preview-image"
-                  />
-                  <span className="preview-name">{visibleNext.name}</span>
-                </div>
-              )}
+            <div className="scroll-container" ref={scrollRef}>
+              <div className="products-row">
+                {allProducts.map((item, index) => (
+                  <div
+                    key={item._id}
+                    ref={(el) => (productRefs.current[index] = el)}
+                    className={`product-card ${
+                      item._id === activeId ? "active-product" : ""
+                    }`}
+                    onClick={() => handleProductClick(item._id)}
+                  >
+                    <span className="badge">Product {index + 1}</span>
 
-              {visibleMain && (
-                <div className="main-product">
-                  <span className="main-badge">Product {visibleIndex + 1}</span>
+                    <img
+                      src={item.image}
+                      alt={item.name}
+                      className="product-image"
+                    />
 
-                  <img
-                    src={visibleMain.image}
-                    alt={visibleMain.name}
-                    className="main-image"
-                  />
-
-                  <span className="main-name">{visibleMain.name}</span>
-                  <span className="main-price">₹{visibleMain.price}</span>
-                </div>
-              )}
-
-              {visiblePrev && (
-                <div
-                  className="prev-preview"
-                  onClick={!animating ? () => startSwap("prev") : undefined}
-                >
-                  <span className="preview-label">Previous</span>
-                  <img
-                    src={visiblePrev.image}
-                    alt={visiblePrev.name}
-                    className="preview-image"
-                  />
-                  <span className="preview-name">{visiblePrev.name}</span>
-                </div>
-              )}
+                    <span className="product-name">{item.name}</span>
+                  </div>
+                ))}
+              </div>
             </div>
 
+            {/* Bottom Arrow Controls */}
             <div className="arrow-controls">
               <button
                 className="arrow-btn"
-                onClick={() => startSwap("prev")}
+                onClick={handlePrev}
                 aria-label="Previous Product"
-                disabled={animating}
               >
                 <FaArrowLeft />
               </button>
 
               <button
                 className="arrow-btn"
-                onClick={() => startSwap("next")}
+                onClick={handleNext}
                 aria-label="Next Product"
-                disabled={animating}
               >
                 <FaArrowRight />
               </button>
