@@ -1,126 +1,166 @@
-import React from "react";
+import React, { useEffect, useState, useRef } from "react";
+import banner1 from "../assets/banner1.png";
+import banner2 from "../assets/banner2.png";
+import banner3 from "../assets/banner3.png";
+import banner4 from "../assets/banner4.png";
 
-function Banner() {
+function BannerSlider() {
+  const images = [banner1, banner2, banner3, banner4];
+  const extendedImages = [images[images.length - 1], ...images, images[0]];
+
+  const [currentIndex, setCurrentIndex] = useState(1);
+  const [transition, setTransition] = useState(true);
+  const isJumping = useRef(false);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (!isJumping.current) {
+        setTransition(true);
+        setCurrentIndex((prev) => prev + 1);
+      }
+    }, 3000);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    if (currentIndex === extendedImages.length - 1) {
+      isJumping.current = true;
+      setTimeout(() => {
+        setTransition(false);
+        setCurrentIndex(1);
+        setTimeout(() => {
+          isJumping.current = false;
+          setTransition(true);
+        }, 50);
+      }, 700);
+    }
+
+    if (currentIndex === 0) {
+      isJumping.current = true;
+      setTimeout(() => {
+        setTransition(false);
+        setCurrentIndex(extendedImages.length - 2);
+        setTimeout(() => {
+          isJumping.current = false;
+          setTransition(true);
+        }, 50);
+      }, 700);
+    }
+  }, [currentIndex, extendedImages.length]);
+
+  const realIndex =
+    currentIndex === 0
+      ? images.length - 1
+      : currentIndex === extendedImages.length - 1
+      ? 0
+      : currentIndex - 1;
+
   return (
     <>
       <style>{`
-        .banner-section {
+        .slider-section {
           width: 100%;
-          display: flex;
-          justify-content: center;
-          margin-top: 10px;
-          padding: 0 20px;
-        }
-
-        .banner-box {
-          width: 100%;
-          max-width: 1200px;
-          height: 320px;
-          border-radius: 20px;
-          background: linear-gradient(135deg, #111827, #374151);
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          padding: 40px 50px;
-          color: white;
+          margin: 0;
+          padding: 0;
           overflow: hidden;
         }
 
-        .banner-content {
-          max-width: 500px;
+        .slider-container {
+          width: 100%;
+          height: 400px;
+          overflow: hidden;
+          position: relative;
+          margin: 0;
+          padding: 0;
         }
 
-        .banner-subtitle {
-          font-size: 14px;
-          letter-spacing: 2px;
-          text-transform: uppercase;
-          opacity: 0.8;
-          margin-bottom: 12px;
+        .slider-track {
+          display: flex;
+          width: 100%;
+          height: 100%;
+          will-change: transform;
         }
 
-        .banner-title {
-          font-size: 42px;
-          font-weight: 700;
-          line-height: 1.2;
-          margin-bottom: 14px;
+        .slider-slide {
+          min-width: 100%;
+          height: 100%;
+          flex-shrink: 0;
         }
 
-        .banner-text {
-          font-size: 16px;
-          opacity: 0.85;
-          margin-bottom: 22px;
-          line-height: 1.6;
+        .slider-slide img {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+          display: block;
+          user-select: none;
+          pointer-events: none;
         }
 
-        .banner-btn {
-          border: none;
-          outline: none;
-          background: white;
-          color: #111827;
-          padding: 12px 24px;
-          font-size: 14px;
-          font-weight: 600;
-          border-radius: 999px;
-          cursor: pointer;
+        .slider-dots {
+          position: absolute;
+          bottom: 16px;
+          left: 50%;
+          transform: translateX(-50%);
+          display: flex;
+          gap: 8px;
+          z-index: 2;
+        }
+
+        .slider-dot {
+          width: 10px;
+          height: 10px;
+          border-radius: 50%;
+          background: rgba(255, 255, 255, 0.45);
           transition: all 0.3s ease;
         }
 
-        .banner-btn:hover {
-          transform: translateY(-2px);
+        .slider-dot.active {
+          background: #fff;
+          transform: scale(1.2);
         }
 
-        .banner-image {
-          width: 260px;
-          height: 260px;
-          border-radius: 20px;
-          background: rgba(255, 255, 255, 0.08);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-size: 22px;
-          font-weight: 600;
-          text-align: center;
-          padding: 20px;
+        @media (max-width: 768px) {
+          .slider-container {
+            height: 250px;
+          }
         }
 
-        @media (max-width: 900px) {
-          .banner-box {
-            flex-direction: column;
-            justify-content: center;
-            text-align: center;
-            height: auto;
-            gap: 30px;
-            padding: 35px 25px;
-          }
-
-          .banner-title {
-            font-size: 32px;
-          }
-
-          .banner-image {
-            width: 100%;
-            max-width: 260px;
+        @media (max-width: 480px) {
+          .slider-container {
             height: 180px;
           }
         }
       `}</style>
 
-      <section className="banner-section">
-        <div className="banner-box">
-          <div className="banner-content">
-            <p className="banner-subtitle">New Arrival</p>
-            <h1 className="banner-title">Discover Your Style</h1>
-            <p className="banner-text">
-              Explore the latest fashion collections for men, women, boys, and girls.
-            </p>
-            <button className="banner-btn">Shop Now</button>
+      <section className="slider-section">
+        <div className="slider-container">
+          <div
+            className="slider-track"
+            style={{
+              transform: `translateX(-${currentIndex * 100}%)`,
+              transition: transition ? "transform 0.7s ease-in-out" : "none",
+            }}
+          >
+            {extendedImages.map((image, index) => (
+              <div className="slider-slide" key={index}>
+                <img src={image} alt={`Slide ${index}`} />
+              </div>
+            ))}
           </div>
 
-          <div className="banner-image">Fashion Banner</div>
+          <div className="slider-dots">
+            {images.map((_, index) => (
+              <span
+                key={index}
+                className={`slider-dot ${index === realIndex ? "active" : ""}`}
+              ></span>
+            ))}
+          </div>
         </div>
       </section>
     </>
   );
 }
 
-export default Banner;
+export default BannerSlider;

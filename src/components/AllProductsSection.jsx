@@ -78,11 +78,11 @@ function AllProductsSection() {
         }
 
         .all-product-image img {
-          width: 100%;
-          height: 100%;
-          object-fit: cover;
-          display: block;
-        }
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
 
         .all-product-name {
           font-size: 14px;
