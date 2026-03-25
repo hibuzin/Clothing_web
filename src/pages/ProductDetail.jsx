@@ -101,6 +101,27 @@ const getDynamicBackground = (color) => {
     navigate(`/product/${productId}`); // route update
   };
 
+  // இந்த className logic மாத்துங்க:
+const getCardClass = (index) => {
+  const total = allProducts.length;
+  if (total === 0 || activeIndex === -1) return "product-card";
+
+  if (index === activeIndex) return "product-card active-product";
+
+  const nextIndex = activeIndex === total - 1 ? 0 : activeIndex + 1;
+  const prevIndex = activeIndex === 0 ? total - 1 : activeIndex - 1;
+
+  const next2Index = nextIndex === total - 1 ? 0 : nextIndex + 1;
+  const prev2Index = prevIndex === 0 ? total - 1 : prevIndex - 1;
+
+  if (index === nextIndex) return "product-card next-product";
+  if (index === prevIndex) return "product-card prev-product";
+  if (index === next2Index) return "product-card next2-product";
+  if (index === prev2Index) return "product-card prev2-product";
+
+  return "product-card hidden-product";
+};
+
   const handlePrev = () => {
     if (!allProducts.length) return;
 
@@ -205,10 +226,20 @@ const getDynamicBackground = (color) => {
           transform: scale(0.92);
         }
 
-        .product-card:hover {
-          opacity: 0.8;
-          transform: scale(0.96);
-        }
+  .near-product:hover {
+  opacity: 0.7;
+  transform: scale(0.34);  /* 0.70 + கொஞ்சம் மட்டும் */
+}
+
+.far-product:hover {
+  opacity: 0.45;
+  transform: scale(0.28);  /* 0.55 + கொஞ்சம் மட்டும் */
+}
+
+.very-far-product:hover {
+  opacity: 0.28;
+  transform: scale(0.15);  /* 0.42 + கொஞ்சம் மட்டும் */
+}
 
         .active-product {
           opacity: 1;
@@ -265,6 +296,35 @@ const getDynamicBackground = (color) => {
           border-radius: 4px;
         }
 
+.prev-product {
+  opacity: 0.7;
+  transform: translate(-20px, 90px) scale(0.72);
+  z-index: 2;
+}
+
+.next-product {
+  opacity: 0.75;
+  transform: translate(20px, -90px) scale(0.72);
+  z-index: 2;
+}
+
+.prev2-product {
+  opacity: 0.35;
+  transform: translate(-40px, 140px) scale(0.55);
+  z-index: 1;
+}
+
+.next2-product {
+  opacity: 0.35;
+  transform: translate(40px, -140px) scale(0.55);
+  z-index: 1;
+}
+
+.hidden-product {
+  opacity: 0.12;
+  transform: scale(0.42);
+  z-index: 0;
+}
         /* ARROWS */
         .arrow-controls {
           width: 100%;
@@ -307,9 +367,12 @@ const getDynamicBackground = (color) => {
           }
 
           .products-row {
-            gap: 16px;
-            padding: 0 calc(50vw - 90px);
-          }
+  display: flex;
+  align-items: center;
+  gap: 28px;
+  width: max-content;
+  padding: 60px calc(50vw - 160px) 40px;
+}
 
           .product-card {
             width: 180px;
@@ -366,9 +429,7 @@ const getDynamicBackground = (color) => {
                   <div
                     key={item._id}
                     ref={(el) => (productRefs.current[index] = el)}
-                    className={`product-card ${
-                      item._id === activeId ? "active-product" : ""
-                    }`}
+                    className={getCardClass(index)}
                     onClick={() => handleProductClick(item._id)}
                   >
                     <span className="badge">Product {index + 1}</span>
