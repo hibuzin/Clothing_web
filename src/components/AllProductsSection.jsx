@@ -54,35 +54,37 @@ function AllProductsSection() {
           gap: 14px;
         }
 
+        /* Card has only the image now */
         .all-product-card {
-          background: #ffffff;
-          border-radius: 16px;
-          padding: 12px;
-          box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
-          transition: transform 0.3s ease, box-shadow 0.3s ease;
           cursor: pointer;
-        }
-
-        .all-product-card:hover {
-          transform: translateY(-4px);
-          box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
         }
 
         .all-product-image {
           width: 100%;
           height: 180px;
-          border-radius: 12px;
+          border-radius: 16px;
           overflow: hidden;
           background: #e5e7eb;
-          margin-bottom: 12px;
+          box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+          transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .all-product-card:hover .all-product-image {
+          transform: translateY(-4px);
+          box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
         }
 
         .all-product-image img {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-  display: block;
-}
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+          display: block;
+        }
+
+        /* Details are outside the card box */
+        .all-product-details {
+          padding: 10px 4px 4px;
+        }
 
         .all-product-name {
           font-size: 14px;
@@ -110,7 +112,7 @@ function AllProductsSection() {
         .all-product-color {
           font-size: 12px;
           color: #6b7280;
-          margin-bottom: 8px;
+          margin-bottom: 6px;
           text-transform: capitalize;
         }
 
@@ -171,31 +173,36 @@ function AllProductsSection() {
         ) : (
           <div className="all-products-grid">
             {products.map((item) => (
-              <div className="all-product-card" key={item._id}
-               onClick={() => navigate(`/product/${item._id}`)}
+              <div
+                className="all-product-card"
+                key={item._id}
+                onClick={() => navigate(`/product/${item._id}`)}
               >
-                
+                {/* Only image inside the styled box */}
                 <div className="all-product-image">
                   <img src={item.image} alt={item.name} />
                 </div>
 
-                <h3 className="all-product-name">{item.name}</h3>
+                {/* All details outside the box */}
+                <div className="all-product-details">
+                  <h3 className="all-product-name">{item.name}</h3>
 
-                {item.brand && (
-                  <p className="all-product-brand">Brand: {item.brand}</p>
-                )}
+                  {item.brand && (
+                    <p className="all-product-brand">Brand: {item.brand}</p>
+                  )}
 
-                {item.category?.name && (
-                  <p className="all-product-category">
-                    Category: {item.category.name}
-                  </p>
-                )}
+                  {item.category?.name && (
+                    <p className="all-product-category">
+                      Category: {item.category.name}
+                    </p>
+                  )}
 
-                {item.color && (
-                  <p className="all-product-color">Color: {item.color}</p>
-                )}
+                  {item.color && (
+                    <p className="all-product-color">Color: {item.color}</p>
+                  )}
 
-                <p className="all-product-price">₹{item.price}</p>
+                  <p className="all-product-price">₹{item.price}</p>
+                </div>
               </div>
             ))}
           </div>

@@ -1,7 +1,10 @@
 import React from "react";
+import { useNavigate } from "react-router-dom";
 import { FaHome, FaHeart, FaShoppingCart, FaUser } from "react-icons/fa";
 
 function SearchBar() {
+  const navigate = useNavigate();
+
   return (
     <>
       <style>{`
@@ -115,10 +118,18 @@ function SearchBar() {
 
           {/* Right Icons */}
           <div className="right-icons">
-            <button className="icon-btn" aria-label="Cart">
-              <FaShoppingCart />
-            </button>
-            <button className="icon-btn" aria-label="Profile">
+            <button
+  className="icon-btn"
+  aria-label="Cart"
+  onClick={() => navigate("/cart")}
+>
+  <FaShoppingCart />
+</button>
+            <button
+              className="icon-btn"
+              aria-label="Profile"
+              onClick={() => navigate("/Login")}
+            >
               <FaUser />
             </button>
           </div>
