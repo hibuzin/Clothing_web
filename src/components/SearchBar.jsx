@@ -1,6 +1,6 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
-import { FaHome, FaHeart, FaShoppingCart, FaUser } from "react-icons/fa";
+import { House, Heart, ShoppingCart, User } from "lucide-react";
 
 function SearchBar() {
   const navigate = useNavigate();
@@ -32,8 +32,8 @@ function SearchBar() {
         }
 
         .icon-btn {
-          width: 40px;
-          height: 40px;
+          width: 30px;
+          height: 30px;
           border: none;
           background: transparent;
           display: flex;
@@ -100,10 +100,10 @@ function SearchBar() {
           {/* Left Icons */}
           <div className="left-icons">
             <button className="icon-btn" aria-label="Home">
-              <FaHome />
+              <House />
             </button>
             <button className="icon-btn" aria-label="Favorites">
-              <FaHeart />
+              <Heart />
             </button>
           </div>
 
@@ -119,18 +119,19 @@ function SearchBar() {
           {/* Right Icons */}
           <div className="right-icons">
             <button
-  className="icon-btn"
-  aria-label="Cart"
-  onClick={() => navigate("/cart")}
->
-  <FaShoppingCart />
-</button>
+              className="icon-btn"
+              aria-label="Cart"
+              onClick={() => navigate("/cart")}
+            >
+             <ShoppingCart />
+            </button>
+
             <button
               className="icon-btn"
               aria-label="Profile"
               onClick={() => navigate("/Login")}
             >
-              <FaUser />
+              <User />
             </button>
           </div>
         </div>

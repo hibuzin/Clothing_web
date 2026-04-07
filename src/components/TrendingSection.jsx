@@ -1,8 +1,10 @@
 import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 function TrendingSection() {
   const [trendingItems, setTrendingItems] = useState([]);
   const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchTrendingProducts = async () => {
@@ -178,7 +180,11 @@ function TrendingSection() {
         ) : (
           <div className="trending-row">
             {trendingItems.map((item) => (
-              <div className="trending-card" key={item._id}>
+              <div
+                className="trending-card"
+                key={item._id}
+                onClick={() => navigate(`/product/${item._id}`)}
+              >
                 <div className="trending-image">
                   <img src={item.image} alt={item.name} />
                 </div>
