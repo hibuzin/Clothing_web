@@ -1,8 +1,10 @@
 import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 function BestItems() {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchSubcategories = async () => {
@@ -11,8 +13,6 @@ function BestItems() {
           "https://clothing-backend-7.onrender.com/api/subcategories"
         );
         const data = await response.json();
-
-        // ALL subcategories show
         setItems(data);
       } catch (error) {
         console.error("Error fetching subcategories:", error);
@@ -23,6 +23,10 @@ function BestItems() {
 
     fetchSubcategories();
   }, []);
+
+  const handleSubcategoryClick = (subcategoryId) => {
+    navigate(`/subcategory/${subcategoryId}`);
+  };
 
   return (
     <>
@@ -145,7 +149,11 @@ function BestItems() {
         ) : (
           <div className="best-items-row">
             {items.map((item) => (
-              <div className="best-item" key={item._id}>
+              <div
+                className="best-item"
+                key={item._id}
+                onClick={() => handleSubcategoryClick(item._id)}
+              >
                 <div className="best-item-circle">
                   <img src={item.image} alt={item.name} />
                 </div>

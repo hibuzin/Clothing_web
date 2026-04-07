@@ -10,6 +10,7 @@ import MyAccount from "./pages/MyAccount";
 import Login from "./pages/Login";
 import Cart from "./pages/Cart";
 import Wishlist from "./pages/Wishlist";
+import SubcategoryProducts from "./components/SubcategoryProducts";
 import SearchPage from "./pages/SearchPage";
 import HomePage from "./components/Home";
 
@@ -27,6 +28,7 @@ function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/cart" element={<Cart />} />
         <Route path="/wishlist" element={<Wishlist />} />
+        <Route path="/subcategory/:subcategoryId" element={<SubcategoryProducts />} />
         <Route path="/search" element={<SearchPage />} />
       </Routes>
     </Router>
